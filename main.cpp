@@ -285,7 +285,6 @@ GtkWidget       *g_pApprcDlg = NULL;
 
 GtkComboBox     *g_pCombo;
 GtkFontChooser  *g_pFontChooser;
-
 GSList          *g_pRadioGrp1,
                 *g_pRadioGrp2;
 GtkRadioButton  *g_pRadio1,
@@ -315,7 +314,6 @@ static void appwindow_activate(GtkApplication *pApp, gpointer pData);
 static gboolean appwindow_draw(GtkWidget *pWidget, cairo_t *cr, gpointer pData);
 static gboolean appwindow_clicked(GtkWidget *pWidget, GdkEvent *pEvent);
 static gboolean appwindow_delete(GtkWidget *pWidget, GdkEvent *pEvent, gpointer pData);
-//static void appwindow_destroy(void);
 
 void*   timer_thread(void *threadid);
 
@@ -324,8 +322,9 @@ static void menu_item1_selected(gchar *string);
 static void menu_item2_selected(gchar *string);
 static void menu_item3_selected(gchar *string);
 
-static void config_window_applybtn_clicked(GtkWidget *widget, gpointer data);
-static void config_window_closebtn_clicked(GtkWidget *widget, gpointer data);
+static void config_window_applybtn_clicked(GtkWidget *widget, gpointer pData);
+static void config_window_closebtn_clicked(GtkWidget *widget, gpointer pData);
+static gboolean config_window_delete(GtkWidget *pWidget, GdkEvent *pEvent, gpointer pData);
 
 
 #ifdef      LOCALE_JA_JP
@@ -481,7 +480,6 @@ static void appwindow_activate(GtkApplication *pApp, gpointer pData) {
     g_signal_connect(g_pAppWnd, "draw",    G_CALLBACK(appwindow_draw), g_pAppWnd);
     g_signal_connect(g_pAppWnd, "button_press_event", G_CALLBACK(appwindow_clicked), g_pAppWnd);
     g_signal_connect(g_pAppWnd, "delete-event", G_CALLBACK(appwindow_delete), g_pAppWnd);
-    //g_signal_connect(g_pAppWnd, "destroy", G_CALLBACK(appwindow_destroy), g_pAppWnd);
     //g_signal_connect(g_pAppWnd, "destroy", G_CALLBACK(g_application_quit), g_pAppWnd);
     
     // when using G_APPLICATION, you don't need to connect g_application_quit
@@ -852,13 +850,6 @@ static gboolean appwindow_delete(GtkWidget *pWidget, GdkEvent *pEvent, gpointer 
 
 
 //
-//  Function    appwindow_destroy
-//
-//--------------------------------------------------------------------------------------------------
-//static void   appwindow_destroy(void) {}
-
-
-//
 //  Function    timer_thread
 //
 //--------------------------------------------------------------------------------------------------
@@ -974,7 +965,8 @@ static void menu_item2_selected(gchar *string) {
                 bkgrColor;
     byte        alpha;
 
-    if (g_pApprcDlg != NULL) {
+    if (GTK_IS_WIDGET(g_pApprcDlg)) {
+        gtk_widget_show_all(g_pApprcDlg);
         return;
     }
 
@@ -1070,6 +1062,7 @@ static void menu_item2_selected(gchar *string) {
 
     g_signal_connect(pApplyBtn, "clicked", G_CALLBACK(config_window_applybtn_clicked), g_pApprcDlg);
     g_signal_connect(pCloseBtn, "clicked", G_CALLBACK(config_window_closebtn_clicked), g_pApprcDlg);
+    g_signal_connect(g_pApprcDlg, "delete-event", G_CALLBACK(config_window_delete), g_pApprcDlg);
 
     // Css - - - - - - - - - - - - - - - - - - - - - -
 
@@ -1117,9 +1110,9 @@ static void menu_item3_selected(gchar *string) {
 //  Function    config_window_applybtn_clicked
 //
 //--------------------------------------------------------------------------------------------------
-static void config_window_applybtn_clicked(GtkWidget *widget, gpointer data) {
+static void config_window_applybtn_clicked(GtkWidget *widget, gpointer pData) {
 
-    GtkWidget   *config_window = (GtkWidget*)data;
+    GtkWidget   *config_window = (GtkWidget*)pData;
 
     gchar       *pFontDsc;
     gchar       *pCmbTxt;
@@ -1232,10 +1225,21 @@ static void config_window_applybtn_clicked(GtkWidget *widget, gpointer data) {
 //  Function    config_window_closebtn_clicked
 //
 //--------------------------------------------------------------------------------------------------
-static void config_window_closebtn_clicked(GtkWidget *widget, gpointer data) {
-    GtkWidget   *config_window = (GtkWidget*)data;
+static void config_window_closebtn_clicked(GtkWidget *widget, gpointer pData) {
+    GtkWidget   *config_window = (GtkWidget*)pData;
     gtk_widget_destroy(config_window);
     g_pApprcDlg = NULL;
+}
+
+
+//
+//  Function    config_window_delete
+//
+//--------------------------------------------------------------------------------------------------
+static gboolean config_window_delete(GtkWidget *pWidget, GdkEvent *pEvent, gpointer pData) {
+    g_pApprcDlg = NULL;
+    // FALSE to propagate the event further
+    return FALSE;
 }
 
 
