@@ -2,6 +2,7 @@
 
 見やすくて、簡単に秒の表示 /非表示が切り替えられて
 柔軟にカスタマイズできるデスクトップの時計です
+
 This is a simple desktop clock application.
 Easy to see, easy to switch display/hide seconds
 and fully customizable.
@@ -12,20 +13,17 @@ and fully customizable.
 コマンドを開いてコンパイル
 ```
 g++ `pkg-config --cflags gtk+-3.0` -o app main.cpp `pkg-config --libs gtk+-3.0`
-
 ```
 
 ユーザーのホームディレクトリにテーマをコピー
  (ディレクトリの前の. は隠しを意味します)
 ```
 cp -r orgclock $HOME/.orgclock
-
 ```
 
 ## 実行
 ```
 ./originalclock
-
 ```
 
 ## もしくはmake, make installします
@@ -37,7 +35,6 @@ autoconf
 automake --add-missing
 ./configure
 make distcheck
-
 ```
 
 利用者のシステム上で
@@ -45,11 +42,9 @@ make distcheck
 ./configure
 make
 make install
-
 ```
 
 ユーザーのホームディレクトリにテーマをコピー
 ```
 cp -r orgclock $HOME/.orgclock
-
 ```
