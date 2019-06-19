@@ -12,7 +12,7 @@ and fully customizable.
 解凍して、マウスメニューから「端末の中に開く」で
 コマンドを開いてコンパイル
 ```
-g++ `pkg-config --cflags gtk+-3.0` -o app main.cpp `pkg-config --libs gtk+-3.0`
+g++ `pkg-config --cflags gtk+-3.0` -o originalclock main.cpp `pkg-config --libs gtk+-3.0`
 ```
 
 ユーザーのホームディレクトリにテーマをコピー
