@@ -1455,7 +1455,7 @@ int32   get_font_size(char *pFontDsc) {
 //
 //  Return Values
 //      success     number of bytes read
-//      failure     0. sets 0 to buffer's first 2 bytes
+//      failure     0.
 //
 //--------------------------------------------------------------------------------------------------
 long    SimpleFileRead(const char *p_path, byte *p_buffer, long size) {
