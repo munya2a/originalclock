@@ -1,9 +1,10 @@
 # OriginalClock
 
-見やすくて、簡単に秒の表示 /非表示が切り替えられて
-柔軟にカスタマイズできるデスクトップのアナログ時計です
+見やすく、簡単に秒の表示 /非表示が切り替えられ、
+柔軟にカスタマイズできる、リナックスのデスクトップの
+アナログ時計です
 
-This is a simple desktop analog clock application.
+This is a simple linux desktop analog clock application.
 Easy to see, easy to switch display/hide seconds
 and fully customizable.
 
