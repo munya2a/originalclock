@@ -1,9 +1,9 @@
 # OriginalClock
 
 見やすくて、簡単に秒の表示 /非表示が切り替えられて
-柔軟にカスタマイズできるデスクトップの時計です
+柔軟にカスタマイズできるデスクトップのアナログ時計です
 
-This is a simple desktop clock application.
+This is a simple desktop analog clock application.
 Easy to see, easy to switch display/hide seconds
 and fully customizable.
 
