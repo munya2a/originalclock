@@ -297,8 +297,8 @@
             <property name="height_request">29</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="max_length">6</property>
-            <property name="width_chars">6</property>
+            <property name="max_length">3</property>
+            <property name="width_chars">3</property>
             <property name="caps_lock_warning">False</property>
             <property name="input_purpose">digits</property>
           </object>
