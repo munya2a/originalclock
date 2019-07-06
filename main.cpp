@@ -120,8 +120,8 @@ gint    message_box(char *pMssg, GtkMessageType msgType, GtkButtonsType btnType)
 int32   get_dir_list(char *pDir, char pplist[][ MAX_BYTES_PATH_INL ], int32 maxDirs);
 int32   get_font_size(char *pFontDsc);
 
-long    SimpleFileRead (const char *p_path, byte *p_buffer, long size);
-bool    SimpleFileWrite(const char *p_path, byte *p_buffer, long size);
+long    simple_file_read (const char *p_path, byte *p_buffer, long size);
+bool    simple_file_write(const char *p_path, byte *p_buffer, long size);
 
 
 //
@@ -322,9 +322,9 @@ static void menu_item1_selected(gchar *string);
 static void menu_item2_selected(gchar *string);
 static void menu_item3_selected(gchar *string);
 
-static void config_window_applybtn_clicked(GtkWidget *widget, gpointer pData);
-static void config_window_closebtn_clicked(GtkWidget *widget, gpointer pData);
-static gboolean config_window_delete(GtkWidget *pWidget, GdkEvent *pEvent, gpointer pData);
+static void apprnc_dlg_applybtn_clicked(GtkWidget *pWidget, gpointer pData);
+static void apprnc_dlg_closebtn_clicked(GtkWidget *pWidget, gpointer pData);
+static gboolean apprnc_dlg_delete(GtkWidget *pWidget, GdkEvent *pEvent, gpointer pData);
 
 
 #ifdef      LOCALE_JA_JP
@@ -1060,9 +1060,9 @@ static void menu_item2_selected(gchar *string) {
 
     // Connect signal handlers to the constructed widgets- - - - - - - - -
 
-    g_signal_connect(pApplyBtn, "clicked", G_CALLBACK(config_window_applybtn_clicked), g_pApprcDlg);
-    g_signal_connect(pCloseBtn, "clicked", G_CALLBACK(config_window_closebtn_clicked), g_pApprcDlg);
-    g_signal_connect(g_pApprcDlg, "delete-event", G_CALLBACK(config_window_delete), g_pApprcDlg);
+    g_signal_connect(pApplyBtn, "clicked", G_CALLBACK(apprnc_dlg_applybtn_clicked), g_pApprcDlg);
+    g_signal_connect(pCloseBtn, "clicked", G_CALLBACK(apprnc_dlg_closebtn_clicked), g_pApprcDlg);
+    g_signal_connect(g_pApprcDlg, "delete-event", G_CALLBACK(apprnc_dlg_delete), g_pApprcDlg);
 
     // Css - - - - - - - - - - - - - - - - - - - - - -
 
@@ -1107,18 +1107,18 @@ static void menu_item3_selected(gchar *string) {
 
 
 //
-//  Function    config_window_applybtn_clicked
+//  Function    apprnc_dlg_applybtn_clicked
 //
 //--------------------------------------------------------------------------------------------------
-static void config_window_applybtn_clicked(GtkWidget *widget, gpointer pData) {
+static void apprnc_dlg_applybtn_clicked(GtkWidget *pWidget, gpointer pData) {
 
-    GtkWidget   *config_window = (GtkWidget*)pData;
+    GtkWidget   *apprnc_dlg = (GtkWidget*)pData;
 
     gchar       *pFontDsc;
     gchar       *pCmbTxt;
     gchar       *pTxt;
     int32       w, h;
-    uint32      color;
+    uint32      opacity;
     double      aa;
     int32       rtrnd;
     bool        rtrn;
@@ -1201,10 +1201,14 @@ static void config_window_applybtn_clicked(GtkWidget *widget, gpointer pData) {
 
     pTxt = (gchar*)gtk_entry_get_text(g_pOpacity);
     if (pTxt != NULL && *pTxt != '\0') {
-        g_appParam.m_alpha = (uint32)::strtol(pTxt, NULL, 10);
-        if (g_appParam.m_alpha < 32) {
-            g_appParam.m_alpha = 32;
+        opacity = (uint32)::strtol(pTxt, NULL, 10);
+        if (opacity < 32) {
+            opacity = 32;
         }
+        if (opacity > 255) {
+            opacity = 255;
+        }
+        g_appParam.m_alpha = (uint8)opacity;
     }
     aa = (double)g_appParam.m_alpha;
 
@@ -1222,21 +1226,21 @@ static void config_window_applybtn_clicked(GtkWidget *widget, gpointer pData) {
 
 
 //
-//  Function    config_window_closebtn_clicked
+//  Function    apprnc_dlg_closebtn_clicked
 //
 //--------------------------------------------------------------------------------------------------
-static void config_window_closebtn_clicked(GtkWidget *widget, gpointer pData) {
-    GtkWidget   *config_window = (GtkWidget*)pData;
-    gtk_widget_destroy(config_window);
+static void apprnc_dlg_closebtn_clicked(GtkWidget *pWidget, gpointer pData) {
+    GtkWidget   *apprnc_dlg = (GtkWidget*)pData;
+    gtk_widget_destroy(apprnc_dlg);
     g_pApprcDlg = NULL;
 }
 
 
 //
-//  Function    config_window_delete
+//  Function    apprnc_dlg_delete
 //
 //--------------------------------------------------------------------------------------------------
-static gboolean config_window_delete(GtkWidget *pWidget, GdkEvent *pEvent, gpointer pData) {
+static gboolean apprnc_dlg_delete(GtkWidget *pWidget, GdkEvent *pEvent, gpointer pData) {
     g_pApprcDlg = NULL;
     // FALSE to propagate the event further
     return FALSE;
@@ -1287,7 +1291,7 @@ int     main(int argc, char **argv) {
 
     ::strcpy(g_pConfigDir, "/param.dat");
 
-    if (! SimpleFileRead(g_path, (byte*)&g_appParam, sizeof(g_appParam))) {
+    if (! simple_file_read(g_path, (byte*)&g_appParam, sizeof(g_appParam))) {
 
         g_appParam.m_mode = MODE_ANALOG | MODE_AN_BKGR_IMG | MODE_DG_BKGR_IMG | MODE_MD_HMS;//MODE_YMD_HM;
         //::wcscpy(g_appParam.m_themeName, L"default");
@@ -1335,7 +1339,7 @@ int     main(int argc, char **argv) {
     if (g_fConfig) {
         ::strcpy(g_pConfigDir, "/param.dat");
         //if (message_box(g_path, MB_MSG_ERR, MB_BTN_OKCN) == GTK_RESPONSE_OK) {
-        SimpleFileWrite(g_path, (byte*)&g_appParam, sizeof(g_appParam));
+        simple_file_write(g_path, (byte*)&g_appParam, sizeof(g_appParam));
         //}
     }
 
@@ -1442,7 +1446,7 @@ int32   get_font_size(char *pFontDsc) {
 
 
 //
-//  Function    SimpleFileRead
+//  Function    simple_file_read
 //
 //  Reads binary data from the file.
 //  files larger than 0x7fffffff are not supported
@@ -1458,7 +1462,7 @@ int32   get_font_size(char *pFontDsc) {
 //      failure     0.
 //
 //--------------------------------------------------------------------------------------------------
-long    SimpleFileRead(const char *p_path, byte *p_buffer, long size) {
+long    simple_file_read(const char *p_path, byte *p_buffer, long size) {
 
     FILE    *fp;
     long    fileSizeLow;
@@ -1494,7 +1498,7 @@ long    SimpleFileRead(const char *p_path, byte *p_buffer, long size) {
 
 
 //
-//  Function    SimpleFileWrite
+//  Function    simple_file_write
 //
 //  Writes binary data to the file. if the file exists, overwrite it.
 //  files larger than 0x7fffffff are not supported
@@ -1503,14 +1507,14 @@ long    SimpleFileRead(const char *p_path, byte *p_buffer, long size) {
 //      pPath       [in]    path
 //        ex "/folder/chara1.txt"
 //      pBuffer     [in]    buffer to write to file
-//      size        [in]    size to write in bytes
+//      size        [in]    number of bytes to write
 //
 //  Return Values
 //      success     true
 //      failuter    false
 //
 //--------------------------------------------------------------------------------------------------
-bool    SimpleFileWrite(const char *p_path, byte *p_buffer, long size) {
+bool    simple_file_write(const char *p_path, byte *p_buffer, long size) {
 
     FILE*   fp;
     long    numBytesWritten;
