@@ -35,10 +35,8 @@
 #include <pthread.h>
 #include <gtk/gtk.h>
 
-
 #define     LOCALE_JA_JP
 //#define   LOCALE_EN_US
-
 
 typedef                 int8_t      int8;
 typedef                 int16_t     int16;
@@ -80,7 +78,6 @@ char            g_path[ MAX_BYTES_PATH_INL ];
 char            *g_pConfigDir;
 char            *g_pThemeRootDir;
 char            *g_pThemeDir;
-
 
 // reference
 // ttps://askubuntu.com/questions/859945/what-is-the-maximum-length-of-a-file-path-in-ubuntu
@@ -269,19 +266,18 @@ struct AppParam {
 // Global variables
 //--------------------------------------------------------------------------------------------------
 
-// Application's main window
+// Application main window
 GtkWidget       *g_pAppWnd = NULL;
 bool            g_1st_instnc = false;
 
-// Popup Menu
+// Popup menu
 GtkWidget       *g_pPopupMenu = NULL,
                 *g_pMenuItem0 = NULL,
                 *g_pMenuItem1 = NULL,
                 *g_pMenuItem2 = NULL,
                 *g_pMenuItem3 = NULL;
 
-// Appearence dialog's widgets
-
+// Appearence dialog
 GtkWidget       *g_pApprcDlg = NULL;
 
 GtkComboBox     *g_pCombo;
@@ -310,11 +306,11 @@ pthread_mutex_t g_mutex;
 bool            g_thr_run = true;
 
 
-static void appwindow_activate(GtkApplication *pApp, gpointer pData);
+static void app_wnd_activate(GtkApplication *pApp, gpointer pData);
 
-static gboolean appwindow_draw(GtkWidget *pWidget, cairo_t *cr, gpointer pData);
-static gboolean appwindow_clicked(GtkWidget *pWidget, GdkEvent *pEvent);
-static gboolean appwindow_delete(GtkWidget *pWidget, GdkEvent *pEvent, gpointer pData);
+static gboolean app_wnd_draw(GtkWidget *pWidget, cairo_t *cr, gpointer pData);
+static gboolean app_wnd_clicked(GtkWidget *pWidget, GdkEvent *pEvent);
+static gboolean app_wnd_delete(GtkWidget *pWidget, GdkEvent *pEvent, gpointer pData);
 
 void*   timer_thread(void *threadid);
 
@@ -350,7 +346,7 @@ char    g_menuItemStr[ 4 ][ 32 ] = {
 
 
 //--------------------------------------------------------------------------------------------------
-// theme loading
+// Theme loading
 //--------------------------------------------------------------------------------------------------
 
 #define         LT_OK                   0
@@ -386,7 +382,7 @@ void    FreeThemeImages();
 
 
 //--------------------------------------------------------------------------------------------------
-// string literals
+// String literals
 //--------------------------------------------------------------------------------------------------
 
 #ifdef      LOCALE_JA_JP
@@ -419,12 +415,12 @@ char    g_errorMssg[ 3 ][ 96 ] = {
 
 
 //
-//  Function    appwindow_activate
+//  Function    app_wnd_activate
 //
 //  gtk application's activate event
 //
 //--------------------------------------------------------------------------------------------------
-static void appwindow_activate(GtkApplication *pApp, gpointer pData) {
+static void app_wnd_activate(GtkApplication *pApp, gpointer pData) {
 
     Stat    st;
     int32   numBytes;
@@ -488,8 +484,6 @@ static void appwindow_activate(GtkApplication *pApp, gpointer pData) {
         g_appParam.m_wndY  = 50;
     }
 
-    //gtk_init(&argc, &argv);
-
     rtrnd = LoadThemeImages(g_appParam.m_themeName);
 
     if (rtrnd != LT_OK) {
@@ -549,9 +543,9 @@ static void appwindow_activate(GtkApplication *pApp, gpointer pData) {
     gtk_window_set_keep_above(GTK_WINDOW(g_pAppWnd), true);
     gtk_window_set_decorated(GTK_WINDOW(g_pAppWnd), false);
 
-    g_signal_connect(g_pAppWnd, "draw",    G_CALLBACK(appwindow_draw), g_pAppWnd);
-    g_signal_connect(g_pAppWnd, "button_press_event", G_CALLBACK(appwindow_clicked), g_pAppWnd);
-    g_signal_connect(g_pAppWnd, "delete-event", G_CALLBACK(appwindow_delete), g_pAppWnd);
+    g_signal_connect(g_pAppWnd, "draw",    G_CALLBACK(app_wnd_draw), g_pAppWnd);
+    g_signal_connect(g_pAppWnd, "button_press_event", G_CALLBACK(app_wnd_clicked), g_pAppWnd);
+    g_signal_connect(g_pAppWnd, "delete-event", G_CALLBACK(app_wnd_delete), g_pAppWnd);
     //g_signal_connect(g_pAppWnd, "destroy", G_CALLBACK(g_application_quit), g_pAppWnd);
     
     // when using G_APPLICATION, you don't need to connect g_application_quit
@@ -567,19 +561,16 @@ static void appwindow_activate(GtkApplication *pApp, gpointer pData) {
 
     gtk_widget_set_opacity(g_pAppWnd, aa);
 
-    // Start the thread.
-    g_thr_run = true;
-
     pthread_create(&g_thr_id, NULL, timer_thread, (void*)NULL);
     pthread_detach(g_thr_id);
 }
 
 
 //
-//  Function    appwindow_draw
+//  Function    app_wnd_draw
 //
 //--------------------------------------------------------------------------------------------------
-static gboolean appwindow_draw(GtkWidget *pWidget, cairo_t *cr, gpointer pData) {
+static gboolean app_wnd_draw(GtkWidget *pWidget, cairo_t *cr, gpointer pData) {
 
     static char fontName[ _NUM_BYTES_FNDSC_INL ];
     static char timeStr1[ 128 ];
@@ -844,10 +835,10 @@ static gboolean appwindow_draw(GtkWidget *pWidget, cairo_t *cr, gpointer pData) 
 
 
 //
-//  Function    appwindow_clicked
+//  Function    app_wnd_clicked
 //
 //--------------------------------------------------------------------------------------------------
-static gboolean appwindow_clicked(GtkWidget *pWidget, GdkEvent *pEvent) {
+static gboolean app_wnd_clicked(GtkWidget *pWidget, GdkEvent *pEvent) {
 
     if (pEvent ->type == GDK_BUTTON_PRESS) {
         // single click with the left mouse button ?
@@ -886,10 +877,10 @@ static gboolean appwindow_clicked(GtkWidget *pWidget, GdkEvent *pEvent) {
 
 
 //
-//  Function    appwindow_delete
+//  Function    app_wnd_delete
 //
 //--------------------------------------------------------------------------------------------------
-static gboolean appwindow_delete(GtkWidget *pWidget, GdkEvent *pEvent, gpointer pData) {
+static gboolean app_wnd_delete(GtkWidget *pWidget, GdkEvent *pEvent, gpointer pData) {
 
     gint    x, y;
 
@@ -1002,7 +993,6 @@ static void menu_item1_selected(gchar *string) {
 
     pthread_mutex_unlock(&g_mutex);
 
-    //gtk_widget_set_size_request(g_pAppWnd, w, h);
     gtk_window_resize(GTK_WINDOW(g_pAppWnd), w, h);
 }
 
@@ -1321,7 +1311,7 @@ int     main(int argc, char **argv) {
 
     pApp = gtk_application_new("org.gtk.example", G_APPLICATION_FLAGS_NONE);
 
-    g_signal_connect(pApp, "activate", G_CALLBACK(appwindow_activate), NULL);
+    g_signal_connect(pApp, "activate", G_CALLBACK(app_wnd_activate), NULL);
 
     // If you're calling g_application_run(), you don't need to call gtk_main() as well:
     // the run() method will spin the main loop for you.
