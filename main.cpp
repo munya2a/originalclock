@@ -1334,9 +1334,7 @@ int     main(int argc, char **argv) {
     g_object_unref(pApp);
 
     if (g_1st_instnc) {
-        sleep(2);
-
-        pthread_mutex_destroy(&g_mutex);
+        pthread_mutex_lock(&g_mutex);
 
         if (g_fConfig) {
             ::strcpy(g_pConfigDir, "/param.dat");
@@ -1344,6 +1342,11 @@ int     main(int argc, char **argv) {
             simple_file_write(g_path, (byte*)&g_appParam, sizeof(g_appParam));
             //}
         }
+
+        pthread_mutex_unlock(&g_mutex);
+
+        sleep(1);
+        pthread_mutex_destroy(&g_mutex);
     }
 
     return status;
