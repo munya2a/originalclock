@@ -306,7 +306,7 @@ pthread_mutex_t g_mutex;
 bool            g_thr_run = true;
 
 
-static void app_wnd_activate(GtkApplication *pApp, gpointer pData);
+static void app_activate(GtkApplication *pApp, gpointer pData);
 
 static gboolean app_wnd_draw(GtkWidget *pWidget, cairo_t *cr, gpointer pData);
 static gboolean app_wnd_clicked(GtkWidget *pWidget, GdkEvent *pEvent);
@@ -415,12 +415,12 @@ char    g_errorMssg[ 3 ][ 96 ] = {
 
 
 //
-//  Function    app_wnd_activate
+//  Function    app_activate
 //
 //  gtk application's activate event
 //
 //--------------------------------------------------------------------------------------------------
-static void app_wnd_activate(GtkApplication *pApp, gpointer pData) {
+static void app_activate(GtkApplication *pApp, gpointer pData) {
 
     Stat    st;
     int32   numBytes;
@@ -1311,7 +1311,7 @@ int     main(int argc, char **argv) {
 
     pApp = gtk_application_new("org.gtk.example", G_APPLICATION_FLAGS_NONE);
 
-    g_signal_connect(pApp, "activate", G_CALLBACK(app_wnd_activate), NULL);
+    g_signal_connect(pApp, "activate", G_CALLBACK(app_activate), NULL);
 
     // If you're calling g_application_run(), you don't need to call gtk_main() as well:
     // the run() method will spin the main loop for you.
