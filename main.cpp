@@ -271,6 +271,7 @@ struct AppParam {
 
 // Application's main window
 GtkWidget       *g_pAppWnd = NULL;
+bool            g_1st_instnc = false;
 
 // Popup Menu
 GtkWidget       *g_pPopupMenu = NULL,
@@ -425,6 +426,77 @@ char    g_errorMssg[ 3 ][ 96 ] = {
 //--------------------------------------------------------------------------------------------------
 static void appwindow_activate(GtkApplication *pApp, gpointer pData) {
 
+    Stat    st;
+    int32   numBytes;
+    int32   rtrnd;
+
+    // Character classification and case conversion.
+    // setlocale(LC_CTYPE, "ja_JP.UTF-8");
+
+    if (g_pAppWnd != NULL) {
+        printf("%s", "already started\n");
+        return;
+    }
+
+    g_1st_instnc = true;
+
+    // Initialize the config directory $HOME/.orgclock.
+
+    ::sprintf(g_path, "%s%s", (char*)getenv("HOME"), "/.orgclock");
+    numBytes = (int32)::strlen(g_path);
+
+    if (numBytes > MAX_BYTES_CONF_DIR) {
+        ::printf(g_errorMssg[ ERR_CONFDIR_TOO_LONG ], MAX_BYTES_CONF_DIR);
+        return;
+    }
+
+    g_pConfigDir = &(g_path[ numBytes ]);
+
+    ::strcpy(g_pConfigDir, "/themes");
+    g_pThemeRootDir = g_pConfigDir + 7;
+
+    // Check if default theme directory exists and it is a directory.
+
+    ::strcpy(g_pThemeRootDir, "/default");
+
+    if (stat(g_path, &st) != 0 || !S_ISDIR(st.st_mode)){
+        ::printf("%s", g_errorMssg[ ERR_DEFAULT_THEME_REQUIRED ]);
+        return;
+    }
+
+    // Read the application setting (param.dat) and theme images
+
+    ::strcpy(g_pConfigDir, "/param.dat");
+
+    if (! simple_file_read(g_path, (byte*)&g_appParam, sizeof(g_appParam))) {
+
+        g_appParam.m_mode = MODE_ANALOG | MODE_AN_BKGR_IMG | MODE_DG_BKGR_IMG | MODE_MD_HMS;//MODE_YMD_HM;
+        //::wcscpy(g_appParam.m_themeName, L"default");
+        //::wcscpy(g_appParam.m_prevThemeName, L"default");
+        //::wcscpy(g_appParam.m_fontName, L"Serif 18");
+        ::strcpy(g_appParam.m_themeName, "default");
+        ::strcpy(g_appParam.m_fontName, "Serif 18");
+        g_appParam.m_fontSize  = 18;
+        g_appParam.m_fontColor = 0x000000;
+        //g_appParam.m_msgFontColor = 0xff0000;
+        g_appParam.m_bkgrColor = 0x808080;
+        //g_appParam.m_msgBkgrColor = 0x000000;
+        //g_appParam.m_colorKey  = 0xffffff;
+        g_appParam.m_useClrKey = 1;
+        g_appParam.m_alpha = 192;
+        g_appParam.m_wndX  = 50;
+        g_appParam.m_wndY  = 50;
+    }
+
+    //gtk_init(&argc, &argv);
+
+    rtrnd = LoadThemeImages(g_appParam.m_themeName);
+
+    if (rtrnd != LT_OK) {
+        message_box(g_LoadThemeErrMssgs[ rtrnd ], MB_MSG_ERR, MB_BTN_OK);
+        return;
+    }
+
     if (pthread_mutex_init(&g_mutex, NULL) != 0) {
         return;
     }
@@ -494,6 +566,9 @@ static void appwindow_activate(GtkApplication *pApp, gpointer pData) {
     aa = aa / 255;
 
     gtk_widget_set_opacity(g_pAppWnd, aa);
+
+    // Start the thread.
+    g_thr_run = true;
 
     pthread_create(&g_thr_id, NULL, timer_thread, (void*)NULL);
     pthread_detach(g_thr_id);
@@ -582,32 +657,26 @@ static gboolean appwindow_draw(GtkWidget *pWidget, cairo_t *cr, gpointer pData) 
         // Draw background - - - - - - - - - - - - - - - -
 
         if (mode & MODE_AN_BKGR_IMG) {
-
             // Make the background transparent - - - - - - - -
-
             cairo_save(cr);
             cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.0);
             cairo_paint(cr);
             cairo_restore(cr);
-
-            cairo_set_source_surface(cr, g_analogBkgr, 0, 0);
-            cairo_paint(cr);
         } else {
             rr = (bkgrColor & 0xff0000) >> 16;  rr /= 255;
             gg = (bkgrColor & 0x00ff00) >>  8;  gg /= 255;
             bb = bkgrColor & 0x0000ff;  bb /= 255;
-
             // Fill the background with a solid color- - - - -
             cairo_save(cr);
             cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
             cairo_set_source_rgba(cr, rr, gg, bb, 1.0);
             cairo_paint(cr);
             cairo_restore(cr);
-
-            cairo_set_source_surface(cr, g_analogBkgr, 0, 0);
-            cairo_paint(cr);
         }
+
+        cairo_set_source_surface(cr, g_analogBkgr, 0, 0);
+        cairo_paint(cr);
 
         // Draw the hour hand- - - - - - - - - - - - - - -
 
@@ -717,26 +786,20 @@ static gboolean appwindow_draw(GtkWidget *pWidget, cairo_t *cr, gpointer pData) 
     } else {
         // Draw background - - - - - - - - - - - - - - - -
 
-        if (mode & MODE_DG_BKGR_IMG) {
-            cairo_set_source_surface(cr, g_digitalBkgr, 0, 0);
-            cairo_paint(cr);
-        } else {
+        if (! (mode & MODE_DG_BKGR_IMG)) {
             rr = (bkgrColor & 0xff0000) >> 16;  rr /= 255;
             gg = (bkgrColor & 0x00ff00) >>  8;  gg /= 255;
             bb = bkgrColor & 0x0000ff;  bb /= 255;
-
             // Fill the background with a solid color- - - - -
-
             cairo_save(cr);
             cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
             cairo_set_source_rgba(cr, rr, gg, bb, 1.0);
             cairo_paint(cr);
             cairo_restore(cr);
-
-            cairo_set_source_surface(cr, g_digitalBkgr, 0, 0);
-            cairo_paint(cr);
         }
 
+        cairo_set_source_surface(cr, g_digitalBkgr, 0, 0);
+        cairo_paint(cr);
 
         // Create the date and time string - - - - - - - -
 
@@ -1255,70 +1318,6 @@ int     main(int argc, char **argv) {
 
     GtkApplication      *pApp;
     int         status;
-    int32       numBytes;
-    int32       rtrnd;
-
-    // Character classification and case conversion.
-    // setlocale(LC_CTYPE, "ja_JP.UTF-8");
-
-    // Initialize the config directory $HOME/.orgclock.
-
-    ::sprintf(g_path, "%s%s", (char*)getenv("HOME"), "/.orgclock");
-    numBytes = (int32)::strlen(g_path);
-
-    if (numBytes > MAX_BYTES_CONF_DIR) {
-        ::printf(g_errorMssg[ ERR_CONFDIR_TOO_LONG ], MAX_BYTES_CONF_DIR);
-        return 0;
-    }
-
-    g_pConfigDir = &(g_path[ numBytes ]);
-
-    ::strcpy(g_pConfigDir, "/themes");
-    g_pThemeRootDir = g_pConfigDir + 7;
-
-    // Check if default theme directory exists and it is a directory.
-
-    Stat    st;
-
-    ::strcpy(g_pThemeRootDir, "/default");
-
-    if (stat(g_path, &st) != 0 || !S_ISDIR(st.st_mode)){
-        ::printf("%s", g_errorMssg[ ERR_DEFAULT_THEME_REQUIRED ]);
-        return 0;
-    }
-
-    // Read the application setting (param.dat) and theme images
-
-    ::strcpy(g_pConfigDir, "/param.dat");
-
-    if (! simple_file_read(g_path, (byte*)&g_appParam, sizeof(g_appParam))) {
-
-        g_appParam.m_mode = MODE_ANALOG | MODE_AN_BKGR_IMG | MODE_DG_BKGR_IMG | MODE_MD_HMS;//MODE_YMD_HM;
-        //::wcscpy(g_appParam.m_themeName, L"default");
-        //::wcscpy(g_appParam.m_prevThemeName, L"default");
-        //::wcscpy(g_appParam.m_fontName, L"Serif 18");
-        ::strcpy(g_appParam.m_themeName, "default");
-        ::strcpy(g_appParam.m_fontName, "Serif 18");
-        g_appParam.m_fontSize  = 18;
-        g_appParam.m_fontColor = 0x000000;
-        //g_appParam.m_msgFontColor = 0xff0000;
-        g_appParam.m_bkgrColor = 0x808080;
-        //g_appParam.m_msgBkgrColor = 0x000000;
-        //g_appParam.m_colorKey  = 0xffffff;
-        g_appParam.m_useClrKey = 1;
-        g_appParam.m_alpha = 192;
-        g_appParam.m_wndX  = 50;
-        g_appParam.m_wndY  = 50;
-    }
-
-    gtk_init(&argc, &argv);
-
-    rtrnd = LoadThemeImages(g_appParam.m_themeName);
-
-    if (rtrnd != LT_OK) {
-        message_box(g_LoadThemeErrMssgs[ rtrnd ], MB_MSG_ERR, MB_BTN_OK);
-        return status;
-    }
 
     pApp = gtk_application_new("org.gtk.example", G_APPLICATION_FLAGS_NONE);
 
@@ -1334,13 +1333,17 @@ int     main(int argc, char **argv) {
 
     g_object_unref(pApp);
 
-    pthread_mutex_destroy(&g_mutex);
+    if (g_1st_instnc) {
+        sleep(2);
 
-    if (g_fConfig) {
-        ::strcpy(g_pConfigDir, "/param.dat");
-        //if (message_box(g_path, MB_MSG_ERR, MB_BTN_OKCN) == GTK_RESPONSE_OK) {
-        simple_file_write(g_path, (byte*)&g_appParam, sizeof(g_appParam));
-        //}
+        pthread_mutex_destroy(&g_mutex);
+
+        if (g_fConfig) {
+            ::strcpy(g_pConfigDir, "/param.dat");
+            //if (message_box(g_path, MB_MSG_ERR, MB_BTN_OKCN) == GTK_RESPONSE_OK) {
+            simple_file_write(g_path, (byte*)&g_appParam, sizeof(g_appParam));
+            //}
+        }
     }
 
     return status;
