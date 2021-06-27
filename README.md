@@ -21,7 +21,7 @@ g++ `pkg-config --cflags gtk+-3.0` -o originalclock main.cpp `pkg-config --libs 
 ```
 cp -r orgclock $HOME/.orgclock
 ```
-新しいバージョンを実行する場合、一旦、以前の設定ファイル $HOME/.orgclock/param.dat を削除してください
+新しいバージョンを実行する場合、一旦、以前の設定ファイル $HOME/.orgclock/param.dat は削除してください
 
 ## 実行
 ```
