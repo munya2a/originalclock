@@ -112,10 +112,8 @@ void    init_bktransprnt(GtkWidget *pWidget);
 #define         MB_BTN_OKCN     GTK_BUTTONS_OK_CANCEL
 
 gint    message_box(char *pMssg, GtkMessageType msgType, GtkButtonsType btnType);
-
 int32   get_dir_list(char *pDir, char pplist[][ MAX_BYTES_PATH_INL ], int32 maxDirs);
-int32   get_font_size(char *pFontDsc);
-
+int32   get_font_param(char *p_font_family, char *p_font_style, char* p_font_dsc);
 long    simple_file_read (const char *p_path, byte *p_buffer, long size);
 bool    simple_file_write(const char *p_path, byte *p_buffer, long size);
 
@@ -232,6 +230,11 @@ inline  int32   CarioSurface::getHeight(){
 //#define       _NUM_CHRS_THMNM_INL         32
 #define         _NUM_BYTES_THMNM            60
 #define         _NUM_BYTES_THMNM_INL        64
+
+#define         _NUM_BYTES_FNNAME           38
+#define         _NUM_BYTES_FNNAME_INL       40
+#define         _NUM_BYTES_FNSTYLE          14
+#define         _NUM_BYTES_FNSTYLE_INL      16
 #define         _NUM_BYTES_FNDSC            62
 #define         _NUM_BYTES_FNDSC_INL        64
 
@@ -239,7 +242,8 @@ struct AppParam {
     uint32      m_mode;
     char        m_themeName[ _NUM_BYTES_THMNM_INL ];
     //char      m_prevThemeName[ _NUM_BYTES_THMNM_INL ];
-    char        m_fontName[ _NUM_BYTES_FNDSC_INL ];
+    char        m_fontName[ _NUM_BYTES_FNNAME_INL ];
+    char        m_fontStyle[ _NUM_BYTES_FNSTYLE_INL ];
     int32       m_fontSize;
     uint32      m_fontColor,
                 //m_msgFontColor,
@@ -468,9 +472,11 @@ static void app_activate(GtkApplication *pApp, gpointer pData) {
         g_appParam.m_mode = MODE_ANALOG | MODE_AN_BKGR_IMG | MODE_DG_BKGR_IMG | MODE_MD_HMS;//MODE_YMD_HM;
         //::wcscpy(g_appParam.m_themeName, L"default");
         //::wcscpy(g_appParam.m_prevThemeName, L"default");
-        //::wcscpy(g_appParam.m_fontName, L"Serif 18");
+        //::wcscpy(g_appParam.m_fontName, L"Serif");
+        //::wcscpy(g_appParam.m_fontStyle, L"Normal");
         ::strcpy(g_appParam.m_themeName, "default");
-        ::strcpy(g_appParam.m_fontName, "Serif 18");
+        ::strcpy(g_appParam.m_fontName, "Serif");
+        ::strcpy(g_appParam.m_fontStyle, "Normal");
         g_appParam.m_fontSize  = 18;
         g_appParam.m_fontColor = 0x000000;
         //g_appParam.m_msgFontColor = 0xff0000;
@@ -571,26 +577,25 @@ static void app_activate(GtkApplication *pApp, gpointer pData) {
 //--------------------------------------------------------------------------------------------------
 static gboolean app_wnd_draw(GtkWidget *pWidget, cairo_t *cr, gpointer pData) {
 
-    static char fontName[ _NUM_BYTES_FNDSC_INL ];
+    static char fontName[ _NUM_BYTES_FNNAME_INL ];
     static char timeStr1[ 128 ];
     static char timeStr2[ 64 ];
 
     time_t      utcNow;
     tm          *pLcltm;
 
-    int32       anw, anh,
-                dgw, dgh,
-                hdw, hdh,
-                cy,
+    int32       anw, anh, dgw, dgh,
+                hdw, hdh, cy,
                 hourHandDegree,
                 minHandDegree,
                 secHandDegree,
                 lnh,
-                textx,
-                texty;
+                textx, texty;
 
     cairo_matrix_t          mat;
     cairo_text_extents_t    extents;
+    cairo_font_slant_t      fnslant  = CAIRO_FONT_SLANT_NORMAL;
+    cairo_font_weight_t     fnweight = CAIRO_FONT_WEIGHT_NORMAL;
 
     uint32      mode;
     int32       fontSize;
@@ -605,7 +610,15 @@ static gboolean app_wnd_draw(GtkWidget *pWidget, cairo_t *cr, gpointer pData) {
     ::time(&utcNow);
     pLcltm = ::localtime(&utcNow);
     mode = g_appParam.m_mode;
-    ::memcpy(fontName, g_appParam.m_fontName, _NUM_BYTES_FNDSC_INL);
+
+    ::memcpy(fontName, g_appParam.m_fontName, _NUM_BYTES_FNNAME_INL);
+    if (::strstr(g_appParam.m_fontStyle, "Italic") != 0) {
+        fnslant = CAIRO_FONT_SLANT_ITALIC;
+    }
+    if (::strstr(g_appParam.m_fontStyle, "Bold") != 0) {
+        fnweight = CAIRO_FONT_WEIGHT_BOLD;
+    }
+
     fontSize  = g_appParam.m_fontSize;
     fontColor = g_appParam.m_fontColor;
     bkgrColor = g_appParam.m_bkgrColor;
@@ -745,7 +758,7 @@ static gboolean app_wnd_draw(GtkWidget *pWidget, cairo_t *cr, gpointer pData) {
         // Draw the date and time string - - - - - - - - -
 
         // Set the font face and size
-        cairo_select_font_face(cr, fontName, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+        cairo_select_font_face(cr, fontName, fnslant, fnweight);
         cairo_set_font_size(cr, fontSize);
 
         rr = (fontColor & 0xff0000) >> 16;  rr /= 255;
@@ -810,7 +823,7 @@ static gboolean app_wnd_draw(GtkWidget *pWidget, cairo_t *cr, gpointer pData) {
         dgh = g_digitalBkgr.getHeight();
 
         // Set the font face and size
-        cairo_select_font_face(cr, fontName, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+        cairo_select_font_face(cr, fontName, fnslant, fnweight);
         cairo_set_font_size(cr, fontSize);
 
         cairo_text_extents(cr, timeStr1, &extents);
@@ -959,7 +972,7 @@ void* timer_thread(void *threadid) {
 
 
 //
-//  Function    menu_item1_selected
+//  Function    menu_item0_selected
 //
 //--------------------------------------------------------------------------------------------------
 static void menu_item0_selected(gchar *string) {
@@ -970,7 +983,7 @@ static void menu_item0_selected(gchar *string) {
 
 
 //
-//  Function    menu_item2_selected
+//  Function    menu_item1_selected
 //
 //--------------------------------------------------------------------------------------------------
 static void menu_item1_selected(gchar *string) {
@@ -997,7 +1010,7 @@ static void menu_item1_selected(gchar *string) {
 
 
 //
-//  Function    menu_item3_selected
+//  Function    menu_item2_selected
 //
 //--------------------------------------------------------------------------------------------------
 static void menu_item2_selected(gchar *string) {
@@ -1009,6 +1022,7 @@ static void menu_item2_selected(gchar *string) {
     //GtkCssProvider    *pCssProvider;
     GError      *error = NULL;
 
+    char        fontDsc[ _NUM_BYTES_FNDSC_INL ];
     char        dirs[ 96 ][ MAX_BYTES_PATH_INL ];
     char        buffer[ 16 ];
     int32       i, numDirs;
@@ -1063,7 +1077,10 @@ static void menu_item2_selected(gchar *string) {
     pthread_mutex_lock(&g_mutex);
 
     mode = g_appParam.m_mode;
-    gtk_font_chooser_set_font(g_pFontChooser, g_appParam.m_fontName);
+    //gtk_font_chooser_set_font(g_pFontChooser, g_appParam.m_fontName);
+    ::sprintf(fontDsc, "%s %s %d",  g_appParam.m_fontName,
+            g_appParam.m_fontStyle, g_appParam.m_fontSize);
+    gtk_font_chooser_set_font(g_pFontChooser, fontDsc);
 
     fontColor = g_appParam.m_fontColor;
     bkgrColor = g_appParam.m_bkgrColor;
@@ -1150,7 +1167,7 @@ static void menu_item2_selected(gchar *string) {
 
 
 //
-//  Function    menu_item4_selected
+//  Function    menu_item3_selected
 //
 //--------------------------------------------------------------------------------------------------
 static void menu_item3_selected(gchar *string) {
@@ -1214,8 +1231,13 @@ static void apprnc_dlg_applybtn_clicked(GtkWidget *pWidget, gpointer pData) {
     rtrn = false;
 
     if (pFontDsc != NULL && *pFontDsc != '\0' && ::strlen(pFontDsc) < _NUM_BYTES_FNDSC) {
-        ::strcpy(g_appParam.m_fontName, pFontDsc);
-        g_appParam.m_fontSize = get_font_size(g_appParam.m_fontName);
+        g_appParam.m_fontSize = get_font_param(g_appParam.m_fontName, g_appParam.m_fontStyle, pFontDsc);
+        if (g_appParam.m_fontSize < 8 || g_appParam.m_fontSize > 50) {
+            ::strcpy(g_appParam.m_fontName, "Serif");
+            ::strcpy(g_appParam.m_fontStyle, "Normal");
+            g_appParam.m_fontSize  = 18;
+        }
+
         g_fConfig |= CONFIG_PARAM;
         rtrn = true;
     }
@@ -1414,29 +1436,142 @@ int32   get_dir_list(char *pDir, char pplist[][  MAX_BYTES_PATH_INL ], int32 max
 }
 
 
+
 //
-//  Function    get_font_size
+//  Function    get_font_param
+//
+//  Get the font family, style, size from the font descriptor
+//
+//  Parameters
+//      p_font_family   [out]   buffer to receive font family
+//      p_font_style    [out]   buffer to receive font style
+//      p_font_dsc      [in]    font descriptor
+//        ex "Serif 8" "Serif Bold 18" "Serif Bold Italic 18"
+//
+//  Return Values
+//      success     the font size
+//      failure     0.
 //
 //--------------------------------------------------------------------------------------------------
-int32   get_font_size(char *pFontDsc) {
+int32   get_font_param(char *p_font_family, char *p_font_style, char* p_font_dsc) {
 
-    int32   i, numBytes, val;
-    uint8   upper, lower;
+    char    fontDsc[ _NUM_BYTES_FNDSC_INL ];
+    char    *pStr;
+    int32   numBytes, i, iStyle, iSize, size;
+    bool    error;
 
-    numBytes = ::strlen(pFontDsc);
-    val = 0;
+    numBytes = ::strlen(p_font_dsc);
 
-    for (i = 0; i < numBytes; i ++) {
-        upper = *(pFontDsc + i) & 0xf0;
-        lower = *(pFontDsc + i) & 0x0f;
+    // If the p_font_dsc is too short or too long or ends with a space, treat it as an error 
 
-        if (upper == 0x30 && lower < 9) {
-            val *= 10;
-            val += lower;
+    if (numBytes < 5 || numBytes > _NUM_BYTES_FNDSC || (*(p_font_dsc + numBytes - 1)) == ' ') {
+        if (p_font_family != 0) {
+            ::strcpy(p_font_family, "Serif");
+        }
+        if (p_font_style != 0) {
+            ::strcpy(p_font_style, "Normal");
+        }
+        return 0;   // error
+    }
+
+    ::memcpy(fontDsc, p_font_dsc, _NUM_BYTES_FNDSC_INL);
+    i = numBytes - 1;
+
+    // Assume that the shortest format of the p_font_dsc is "aaa 9"
+
+    while (i > 2) {
+        if (*(p_font_dsc + i) == ' ') {
+            fontDsc[ i ] = '\0';
+            iSize = i + 1;
+            break;
+        }
+
+        i --;
+    }
+
+    size = ::atoi(p_font_dsc + iSize);
+
+    if (size == 0) {
+        if (p_font_family != 0) {
+            ::strcpy(p_font_family, "Serif");
+        }
+        if (p_font_style != 0) {
+            ::strcpy(p_font_style, "Normal");
+        }
+        return 0;   // error
+    }
+
+    iStyle = 0;
+    i --;
+
+    while (i > 2) {
+        if (*(p_font_dsc + i) == ' ') {
+            pStr = fontDsc + i + 1;
+
+            if (::strstr(pStr, "Italic") == pStr || ::strstr(pStr, "Bold") == pStr) {
+                // Remember the current location of p_font_dsc and search forward
+                iStyle = i + 1;
+            } else {
+                break;
+            }
+        }
+
+        i--;
+    }
+
+    if (iStyle != 0) {
+        // Assume that the shortest format of the p_font_dsc is "aaa bold 9"
+        if (iStyle > 3) {
+            fontDsc[ iStyle - 1 ] = '\0';
+            //printf("Style %s specifed. \n", fontDsc + iStyle);
+        } else {
+            if (p_font_family != 0) {
+                ::strcpy(p_font_family, "Serif");
+            }
+            if (p_font_style != 0) {
+                ::strcpy(p_font_style, "Normal");
+            }
+            return 0;   // error
+        }
+    }// else {
+    //  ::printf("No style specified. \n");
+    //}
+
+    // Copy font name and styles - - - - - - - - - - -
+
+    error = false;
+
+    if (p_font_family != 0) {
+        if (::strlen(fontDsc) <= _NUM_BYTES_FNNAME) {
+            ::strcpy(p_font_family, fontDsc);
+        } else {
+            error = true;
         }
     }
 
-    return val;
+    if (p_font_style != 0 && error == false) {
+        if (iStyle != 0) {
+            if (::strlen(fontDsc + iStyle) <= _NUM_BYTES_FNSTYLE) {
+                ::strcpy(p_font_style, (fontDsc + iStyle));
+            } else {
+                error = true;
+            }
+        } else {
+            ::strcpy(p_font_style, "Normal");
+        }
+    }
+
+    if (error) {
+        if (p_font_family != 0) {
+            ::strcpy(p_font_family, "Serif");
+        }
+        if (p_font_style != 0) {
+            ::strcpy(p_font_style, "Normal");
+        }
+        return 0;   // error
+    }
+
+    return size;
 }
 
 
@@ -1548,7 +1683,6 @@ int32   LoadThemeImages(char *pThemeName) {
     //mbstate_t mbstt;
 
     int32   numBytes;
-
     int32   anw, anh, dgw, dgh,
             hdw, hdh;
 
