@@ -875,8 +875,11 @@ static gboolean app_wnd_clicked(GtkWidget *pWidget, GdkEvent *pEvent) {
 
         // single click with the right mouse button ?
         } else if (((GdkEventButton*)pEvent)->button == 3) {
-            gtk_menu_popup(GTK_MENU(g_pPopupMenu), NULL, NULL, NULL, NULL, 0,
-                           ((GdkEventButton*)pEvent)->time);
+            gtk_menu_popup_at_widget(GTK_MENU(g_pPopupMenu), pWidget, GDK_GRAVITY_CENTER,
+                        GDK_GRAVITY_CENTER, NULL);
+            // deprecated since 3.22
+            //gtk_menu_popup(GTK_MENU(g_pPopupMenu), NULL, NULL, NULL, NULL, 0,
+            //               ((GdkEventButton*)pEvent)->time);
             return TRUE;
         } else {
             ;
